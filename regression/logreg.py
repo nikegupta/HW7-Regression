@@ -58,16 +58,16 @@ class BaseRegressor():
             update_sizes = []
 
             # Iterate through batches (one of these loops is one epoch of training)
-            for X_train, y_train in zip(X_batch, y_batch):
+            for X_train_1, y_train_1 in zip(X_batch, y_batch):
 
                 # Make prediction and calculate loss
-                y_pred = self.make_prediction(X_train)
-                train_loss = self.loss_function(y_train, y_pred)
+                y_pred = self.make_prediction(X_train_1)
+                train_loss = self.loss_function(y_train_1, y_pred)
                 self.loss_hist_train.append(train_loss)
 
                 # Update weights
                 prev_W = self.W
-                grad = self.calculate_gradient(y_train, X_train)
+                grad = self.calculate_gradient(y_train_1, X_train_1, y_pred)
                 new_W = prev_W - self.lr * grad 
                 self.W = new_W
 
@@ -129,7 +129,14 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             The predicted labels (y_pred) for given X.
         """
-        pass
+
+        y_pred = np.full(X.shape[0],0.)
+        
+        pre_binarized_pred = np.dot(X,self.W)
+        for i in range(len(y_pred)):
+            y_pred[i] = 1 / (1 + np.exp(-1 * pre_binarized_pred[i]))
+        return y_pred
+
     
     def loss_function(self, y_true, y_pred) -> float:
         """
@@ -143,9 +150,14 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             The mean loss (a single number).
         """
-        pass
+        loss = 0
+
+        for i in range(len(y_true)):
+            loss += y_true[i] * np.log10(y_pred[i]) + (1 - y_true[i]) * np.log10(1 - y_pred[i])
+
+        return loss * (-1 / len(y_true))
         
-    def calculate_gradient(self, y_true, X) -> np.ndarray:
+    def calculate_gradient(self, y_true, X, y_pred) -> np.ndarray:
         """
         TODO: Calculate the gradient of the loss function with respect to the given data. This
         will be used to update the weights during training.
@@ -157,4 +169,13 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             Vector of gradients.
         """
-        pass
+
+        X_t = np.transpose(X)
+        y_diff = y_pred - y_true       
+        gradient = (1 / X.shape[0]) * np.dot(X_t,y_diff)
+
+        return gradient
+
+
+
+        
